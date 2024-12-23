@@ -103,6 +103,29 @@ class TicketSerializer(serializers.ModelSerializer):
         fields = ("id", "row", "seat", "movie_session")
 
 
+class TicketCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = ("row", "seat", "movie_session")
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    tickets = TicketCreateSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ("tickets",)
+
+    def create(self, validated_data):
+        tickets_data = validated_data.pop(
+            "tickets")  # Извлекаем данные билетов
+        order = Order.objects.create(**validated_data)  # Создаем заказ
+        for ticket_data in tickets_data:
+            Ticket.objects.create(order=order,
+                                  **ticket_data)  # Создаем каждый билет
+        return order
+
+
 class OrderListSerializer(serializers.ModelSerializer):
     tickets = TicketSerializer(many=True, read_only=True, allow_empty=False)
 

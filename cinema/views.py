@@ -14,6 +14,7 @@ from cinema.serializers import (
     MovieDetailSerializer,
     MovieSessionDetailSerializer,
     MovieListSerializer, OrderListSerializer, TicketSerializer,
+    OrderCreateSerializer,
 )
 
 
@@ -45,6 +46,23 @@ class MovieViewSet(viewsets.ModelViewSet):
 
         return MovieSerializer
 
+    def get_queryset(self):
+        queryset = Movie.objects.all()
+        actors = self.request.query_params.get("actors")
+        if actors:
+            queryset = Movie.objects.filter(
+                actors__full_name__in=actors.split(","))
+
+        title = self.request.query_params.get("title")
+        if title:
+            queryset = Movie.objects.filter(title__icontains=title)
+
+        genres = self.request.query_params.get("genres")
+        if genres:
+            queryset = Movie.objects.filter(genres__name__in=genres.split(","))
+
+        return queryset
+
 
 class MovieSessionViewSet(viewsets.ModelViewSet):
     queryset = MovieSession.objects.all()
@@ -72,10 +90,17 @@ class OrderSetPagination(PageNumberPagination):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.prefetch_related()
-    # queryset = Order.objects.prefetch_related("tickets__movie_session")
-    serializer_class = OrderListSerializer
+    queryset = Order.objects.all()
     pagination_class = OrderSetPagination
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        return Order.objects.filter(user=self.request.user).prefetch_related(
+            "tickets__movie_session")
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return OrderCreateSerializer
+        return OrderListSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
