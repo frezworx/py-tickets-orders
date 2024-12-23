@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
@@ -47,21 +48,31 @@ class MovieViewSet(viewsets.ModelViewSet):
         return MovieSerializer
 
     def get_queryset(self):
-        queryset = Movie.objects.all()
+        queryset = self.queryset.prefetch_related()
+
         actors = self.request.query_params.get("actors")
         if actors:
-            queryset = Movie.objects.filter(
-                actors__full_name__in=actors.split(","))
+            actor_names = actors.split(",")
+            query = Q()
+            for name in actor_names:
+                query |= Q(actors__first_name__icontains=name) | Q(
+                    actors__last_name__icontains=name
+                )
+            queryset = queryset.filter(query)
 
         title = self.request.query_params.get("title")
         if title:
-            queryset = Movie.objects.filter(title__icontains=title)
+            queryset = queryset.filter(
+                title__icontains=title
+            )
 
         genres = self.request.query_params.get("genres")
         if genres:
-            queryset = Movie.objects.filter(genres__name__in=genres.split(","))
+            queryset = queryset.filter(
+                genres__name__icontains=genres.split(",")
+            )
 
-        return queryset
+        return queryset.distinct()
 
 
 class MovieSessionViewSet(viewsets.ModelViewSet):
