@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.db.models.functions import TruncDate
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
@@ -78,6 +79,26 @@ class MovieViewSet(viewsets.ModelViewSet):
 class MovieSessionViewSet(viewsets.ModelViewSet):
     queryset = MovieSession.objects.all()
     serializer_class = MovieSessionSerializer
+
+    @staticmethod
+    def get_format_show_time(self):
+        pass
+
+    def get_queryset(self):
+        queryset = self.queryset.prefetch_related("movie")
+
+        date = self.request.query_params.get("date")
+        movie = self.request.query_params.get("movie")
+
+        if date:
+            queryset = queryset.annotate(
+                date=TruncDate("show_time")
+            ).filter(date=date)
+
+        if movie:
+            queryset = queryset.filter(movie=movie)
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "list":
