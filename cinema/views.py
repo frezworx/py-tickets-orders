@@ -4,8 +4,15 @@ from django.db.models.functions import TruncDate
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 
-from cinema.models import Genre, Actor, CinemaHall, Movie, MovieSession, Order, \
+from cinema.models import (
+    Genre,
+    Actor,
+    CinemaHall,
+    Movie,
+    MovieSession,
+    Order,
     Ticket
+)
 
 from cinema.serializers import (
     GenreSerializer,
@@ -103,10 +110,7 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
             queryset = queryset.select_related("cinema_hall").annotate(
                 capacity=F("cinema_hall__rows") * F(
                     "cinema_hall__seats_in_row"),
-                tickets_available=ExpressionWrapper(
-                    F("capacity") - Count("tickets"),
-                    output_field=IntegerField(),
-                )
+                tickets_available=F("capacity") - Count("tickets"),
             )
         return queryset
 
