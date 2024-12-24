@@ -1,4 +1,5 @@
-from django.db.models import Q
+from django.db.models import Q, Count, F, ExpressionWrapper
+from django.db.models.fields import IntegerField
 from django.db.models.functions import TruncDate
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
@@ -98,6 +99,15 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
         if movie:
             queryset = queryset.filter(movie=movie)
 
+        if self.action == "retrieve":
+            queryset = queryset.select_related("cinema_hall").annotate(
+                capacity=F("cinema_hall__rows") * F(
+                    "cinema_hall__seats_in_row"),
+                tickets_available=ExpressionWrapper(
+                    F("capacity") - Count("tickets"),
+                    output_field=IntegerField(),
+                )
+            )
         return queryset
 
     def get_serializer_class(self):

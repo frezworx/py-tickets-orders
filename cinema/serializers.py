@@ -17,10 +17,6 @@ class ActorSerializer(serializers.ModelSerializer):
         model = Actor
         fields = ("id", "first_name", "last_name", "full_name")
 
-    @staticmethod
-    def get_full_name(obj):
-        return f"{obj.first_name} {obj.last_name}"
-
 
 class CinemaHallSerializer(serializers.ModelSerializer):
     class Meta:
@@ -85,6 +81,12 @@ class MovieSessionListSerializer(MovieSessionSerializer):
         )
 
 
+class TicketTakenSeatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = ("row", "seat")
+
+
 class MovieSessionDetailSerializer(MovieSessionSerializer):
     movie_title = serializers.CharField(source="movie.title", read_only=True)
     cinema_hall_name = serializers.CharField(
@@ -94,8 +96,14 @@ class MovieSessionDetailSerializer(MovieSessionSerializer):
         source="cinema_hall.capacity", read_only=True
     )
 
-    # movie = MovieListSerializer(many=False, read_only=True)
-    # cinema_hall = CinemaHallSerializer(many=False, read_only=True)
+    taken_seats = TicketTakenSeatsSerializer(
+        many=True,
+        source="tickets"
+    )
+
+    tickets_available = serializers.IntegerField(
+         read_only=True
+    )
 
     class Meta:
         model = MovieSession
@@ -104,7 +112,9 @@ class MovieSessionDetailSerializer(MovieSessionSerializer):
             "show_time",
             "movie_title",
             "cinema_hall_name",
-            "cinema_hall_capacity"
+            "cinema_hall_capacity",
+            "taken_seats",
+            "tickets_available"
         )
 
 
